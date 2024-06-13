@@ -5,4 +5,4 @@
 /ZephyrRTOS_TAD_logs/
 /an_flash_xip_plus_psram/Debug/
 /an_flash_xip_plus_psram/.settings/
-/an_flash_xip_plus_psram/frdmrw612_dyson_video_mems_demo JLink Debug.launch
+/an_flash_xip_plus_psram/an_flash_xip_plus_psram JLink Debug.launch
