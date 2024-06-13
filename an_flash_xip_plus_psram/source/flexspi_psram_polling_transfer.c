@@ -27,6 +27,8 @@
 #define PSRAM_BUFFER_SIZE                  1024U
 #define PSRAM_SIZE                         0x800000U
 #define PSRAM_CACHE_START_ADDR             0x2C000000U
+#define PSRAM_CACHE_END_ADDR               0x2C800000U
+#define PSRAM_BUFFER_PATTERN               0xAABBCCDDU
 
 /*******************************************************************************
  * Prototypes
@@ -144,6 +146,7 @@ void psram_ip_test(void)
     PRINTF("IP Test completed!\r\n");
 }
 
+
 void psram_ahb_test(void)
 {
     status_t status;
@@ -178,6 +181,42 @@ void psram_ahb_test(void)
 }
 
 
+void psram_nonInit_buffer_test(void)
+{
+	uint32_t psram_buffer_add = (uint32_t)&psram_nonInit_buffer;
+	uint32_t index;
+	status_t result_flag = kStatus_Success;
+
+	/*psram_nonInit_buffer must be allocated in the psram cache zone:
+	  0x2C000000 <= psram_buffer_add < 0x2C800000 */
+	if((PSRAM_CACHE_START_ADDR <= psram_buffer_add) && (psram_buffer_add < PSRAM_CACHE_END_ADDR))
+	{
+		PRINTF("pSRAM buffer right allocated at cache zone: 0x%x\r\n",psram_buffer_add);
+		for(index=0;index<PSRAM_BUFFER_SIZE;index++)
+		{
+			psram_nonInit_buffer[index] = PSRAM_BUFFER_PATTERN - index;
+		}
+		for(index=0;index<PSRAM_BUFFER_SIZE;index++)
+		{
+			if(psram_nonInit_buffer[index] != (PSRAM_BUFFER_PATTERN - index))
+			{
+				PRINTF("Fail writing to pSRAM buffer at index: 0x%x\r\n",index);
+				result_flag = kStatus_Fail;
+				break;
+			}
+		}
+		if(result_flag == kStatus_Success)
+		{
+			PRINTF("pSRAM buffer writing succeed in all range\r\n");
+		}
+	}else
+	{
+		PRINTF("pSRAM buffer not right allocated at cache zone: 0x%x\r\n",psram_buffer_add);
+	}
+}
+
+
+
 int main(void)
 {
     uint32_t i  = 0;
@@ -195,6 +234,7 @@ int main(void)
 
     PRINTF("FLEXSPI example started!\r\n");
 
+    psram_nonInit_buffer_test();
     psram_ip_test();
     psram_ahb_test();
 
