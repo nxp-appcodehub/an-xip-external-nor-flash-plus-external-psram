@@ -69,8 +69,8 @@ SECTIONS
 
         *(.after_vectors*)
 
-        *(EXCLUDE_FILE(*fsl_flexspi.o *fsl_clock.o *clock_config.o *fsl_reset.o *fsl_debug_console.o *fsl_cache.o *mflash_drv.o) .text*)
-       *(.rodata .rodata.* .constdata .constdata.*)
+        *(EXCLUDE_FILE(*fsl_flexspi.o *fsl_clock.o *clock_config.o *fsl_reset.o *fsl_debug_console.o *fsl_cache.o) .text*)
+        *(.rodata .rodata.* .constdata .constdata.*)
        . = ALIGN(4);
     } > QSPI_FLASH
     /*
@@ -136,7 +136,6 @@ SECTIONS
        *fsl_reset.o (.text*)
        *fsl_debug_console.o (.text*)
        *fsl_cache.o (.text*)
-       *mflash_drv.o(.text .text* .rodata .rodata*)
        *(.data*)
        . = ALIGN(4) ;
        _edata = . ;
