@@ -9,7 +9,8 @@
         <toolchain name="mcux"></toolchain>
     </toolchains>
     <families>
-        <family name="rw61x"></family>
+        <family name="rw"></family>
+		<family name="rw61x"></family>
     </families>
     <nxp_compatible_hw>
         <hw id="FRDM-RW612"></hw>
