@@ -207,7 +207,7 @@ void psram_nonInit_buffer_test(void)
 		}
 		if(result_flag == kStatus_Success)
 		{
-			PRINTF("pSRAM buffer writing succeed in all range\r\n");
+			PRINTF("pSRAM buffer writing succeeded in all range\r\n");
 		}
 	}else
 	{

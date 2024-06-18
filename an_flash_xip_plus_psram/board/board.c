@@ -74,7 +74,7 @@ static status_t flexspi_hyper_ram_run_seq(FLEXSPI_Type *base, uint32_t seqIndex)
 __RAMFUNC(RAM) status_t BOARD_InitPsRam(void)
 {
 	flexspi_device_config_t flashConfig = {
-	    .flexspiRootClk       = 130000000U,
+	    .flexspiRootClk       = 106666667U,
 	    .flashSize            = 0x10000, /* 128Mb/Kbyte */
 	    .CSIntervalUnit       = kFLEXSPI_CsIntervalUnit1SckCycle,
 	    .CSInterval           = 2,
@@ -92,7 +92,7 @@ __RAMFUNC(RAM) status_t BOARD_InitPsRam(void)
 	};
 
 	flexspi_device_config_t psramConfig = {
-        .flexspiRootClk       = 106666667, /* 106MHZ SPI serial clock */
+        .flexspiRootClk       = 106666667U, /* 106MHZ SPI serial clock */
         .isSck2Enabled        = false,
         .flashSize            = 0x2000,    /* 64Mb/KByte */
         .addressShift         = false,
