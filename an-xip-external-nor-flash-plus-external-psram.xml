@@ -3,7 +3,7 @@
         XIP from external NOR flash and configuring external pSRAM using multiport FlexSPI module
     </display_title>
     <overview>
-        <![CDATA[RW61x has a FlexSPI modue with two ports that allows you to connect two QSPI/SPI memories allowing to perform XIP from one of them. This application note will guide you step by step how to configure the NOR flash connected to the portA and perform XIP and configure a pSRAM memory connected to the portB and access them through the AHB bus (cache) and IP bus.]]>
+        <![CDATA[RW61x has a FlexSPI module with two ports that allows you to connect two QSPI/SPI memories allowing to perform XIP from one of them. This application note will guide you step by step how to configure the NOR flash connected to the portA and perform XIP and configure a pSRAM memory connected to the portB and access them through the AHB bus (cache) and IP bus.]]>
     </overview>
     <toolchains>
         <toolchain name="mcux"></toolchain>
