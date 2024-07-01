@@ -1,32 +1,16 @@
-GROUP (
-  "libcr_nohost_nf.a"
-  "libcr_c.a"
-  "libcr_eabihelpers.a"
-  "libgcc.a"
-)
+/*
+ * GENERATED FILE - DO NOT EDIT
+ * Copyright 2008-2013 Code Red Technologies Ltd,
+ * Copyright 2013-2024 NXP
+ * Generated linker script file for RW612
+ * Created from linkscript.ldt by FMCreateLinkLibraries
+ * Using Freemarker v2.3.30
+ * MCUXpresso IDE v11.9.0 [Build 2144] [2024-01-05] on Jun 28, 2024, 5:44:38 PM
+ */
 
-MEMORY
-{
-  /* Define each memory region */
-  QSPI_FLASH (rx) : ORIGIN = 0x8000000, LENGTH = 0x800000 /* 8M bytes (alias Flash) */  
-  SRAM (rwx) : ORIGIN = 0x20000000, LENGTH = 0x130000 /* 1216K bytes (alias RAM) */  
-  PSRAM (rwx) : ORIGIN = 0x2C000000, LENGTH = 0x800000 /* 8M bytes (alias RAM2) */  
-}
+INCLUDE "an_flash_xip_plus_psram_Release_library.ld"
+INCLUDE "an_flash_xip_plus_psram_Release_memory.ld"
 
-  /* Define a symbol for the top of each memory region */
-  __base_QSPI_FLASH = 0x8000000  ; /* QSPI_FLASH */  
-  __base_Flash = 0x8000000 ; /* Flash */  
-  __top_QSPI_FLASH = 0x8000000 + 0x800000 ; /* 8M bytes */  
-  __top_Flash = 0x8000000 + 0x800000 ; /* 8M bytes */  
-  __base_SRAM = 0x20000000  ; /* SRAM */  
-  __base_RAM = 0x20000000 ; /* RAM */  
-  __top_SRAM = 0x20000000 + 0x130000 ; /* 1216K bytes */  
-  __top_RAM = 0x20000000 + 0x130000 ; /* 1216K bytes */
-  __base_PSRAM = 0x2C000000  ; /* PSRAM */  
-  __base_RAM2 = 0x2C000000 ; /* RAM2 */  
-  __top_PSRAM = 0x2C000000 + 0x800000 ; /* 8M bytes */  
-  __top_RAM2 = 0x2C000000 + 0x800000 ; /* 8M bytes */ 
-  
 ENTRY(ResetISR)
 
 SECTIONS
@@ -51,10 +35,10 @@ SECTIONS
         . = ALIGN(4) ;
         __section_table_start = .;
         __data_section_table = .;
-        LONG(LOADADDR(.data));
+        LONG((LOADADDR(.data) - LOADADDR(.text)) + __base_SRAM);
         LONG(    ADDR(.data));
         LONG(  SIZEOF(.data));
-        LONG(LOADADDR(.data_RAM2));
+        LONG((LOADADDR(.data_RAM2) - LOADADDR(.text)) + __base_SRAM);
         LONG(    ADDR(.data_RAM2));
         LONG(  SIZEOF(.data_RAM2));
         __data_section_table_end = .;
@@ -70,9 +54,9 @@ SECTIONS
         *(.after_vectors*)
 
         *(EXCLUDE_FILE(*fsl_flexspi.o *fsl_clock.o *clock_config.o *fsl_reset.o *fsl_debug_console.o *fsl_cache.o) .text*)
-        *(.rodata .rodata.* .constdata .constdata.*)
+       *(.rodata .rodata.* .constdata .constdata.*)
        . = ALIGN(4);
-    } > QSPI_FLASH
+    } > SRAM AT> QSPI_FLASH
     /*
      * for exception handling/unwind - some Newlib functions (in common
      * with C++ and STDC++) use this.
@@ -80,14 +64,14 @@ SECTIONS
     .ARM.extab : ALIGN(4)
     {
         *(.ARM.extab* .gnu.linkonce.armextab.*)
-    } > QSPI_FLASH
+    } > SRAM AT> QSPI_FLASH
 
     .ARM.exidx : ALIGN(4)
     {
         __exidx_start = .;
         *(.ARM.exidx* .gnu.linkonce.armexidx.*)
         __exidx_end = .;
-    } > QSPI_FLASH
+    } > SRAM AT> QSPI_FLASH
  
     _etext = .;
         
@@ -119,7 +103,7 @@ SECTIONS
     } > SRAM AT> SRAM
 
     /* Main DATA section (SRAM) */
-    .data : ALIGN(4)
+    .data : ALIGN_WITH_INPUT
     {
        FILL(0xff)
        _data = . ;
@@ -199,7 +183,7 @@ SECTIONS
     } > SRAM AT> SRAM
 
     /* Reserve and place Heap within memory map */
-    _HeapSize = 0x4000;
+    _HeapSize = 0x1000;
     .heap (NOLOAD) :  ALIGN(4)
     {
         _pvHeapStart = .;

@@ -1,0 +1,12 @@
+    /* DEFAULT NOINIT SECTION */
+    .noinit (NOLOAD): ALIGN(4)
+    {
+        _noinit = .;
+        PROVIDE(__start_noinit_RAM = .) ;
+        PROVIDE(__start_noinit_SRAM = .) ;
+        *(.noinit*)
+        . = ALIGN(4) ;
+        _end_noinit = .;
+        PROVIDE(__end_noinit_RAM = .) ;
+        PROVIDE(__end_noinit_SRAM = .) ;
+    } > SRAM AT> SRAM

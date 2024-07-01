@@ -47,6 +47,32 @@ void BOARD_InitDebugConsole(void)
     DbgConsole_Init(BOARD_DEBUG_UART_INSTANCE, BOARD_DEBUG_UART_BAUDRATE, BOARD_DEBUG_UART_TYPE, uartClkSrcFreq);
 }
 
+
+static status_t flexspi_hyper_ram_read_id(FLEXSPI_Type *base, uint32_t *buffer)
+{
+    flexspi_transfer_t flashXfer;
+    status_t status;
+
+    /* Write data */
+    if(base->FLSHCR0[0] != 0){
+        /*If portA1 memory size is configured, then add the size to the portB address*/
+        flashXfer.deviceAddress = (0 + (base->FLSHCR0[0] * 1024));
+    }else{
+    	/*If portA1 memory not configured, then no change to the address*/
+        flashXfer.deviceAddress = 0;
+    }
+    flashXfer.cmdType       = kFLEXSPI_Read;
+    flashXfer.SeqNumber     = 1;
+    flashXfer.seqIndex      = 15;
+    flashXfer.data          = buffer;
+    flashXfer.dataSize      = 2;
+
+    status = FLEXSPI_TransferBlocking(base, &flashXfer);
+
+    return status;
+}
+
+
 static status_t flexspi_hyper_ram_run_seq(FLEXSPI_Type *base, uint32_t seqIndex)
 {
     flexspi_transfer_t flashXfer;
@@ -54,11 +80,11 @@ static status_t flexspi_hyper_ram_run_seq(FLEXSPI_Type *base, uint32_t seqIndex)
 
     /* Write data */
     if(base->FLSHCR0[0] != 0){
-    	/*If portA1 memory size is configured, then add the size to the portB address*/
-    	flashXfer.deviceAddress = (0 + (base->FLSHCR0[0] * 1024));
+        /*If portA1 memory size is configured, then add the size to the portB address*/
+        flashXfer.deviceAddress = (0 + (base->FLSHCR0[0] * 1024));
     }else{
-    	/*If portA1 memory not configured, then no change to the address*/
-    	flashXfer.deviceAddress = 0;
+        /*If portA1 memory not configured, then no change to the address*/
+        flashXfer.deviceAddress = 0;
     }
     flashXfer.port          = kFLEXSPI_PortB1;
     flashXfer.cmdType       = kFLEXSPI_Command;
@@ -71,25 +97,25 @@ static status_t flexspi_hyper_ram_run_seq(FLEXSPI_Type *base, uint32_t seqIndex)
 }
 
 /* Initialize psram. */
-__RAMFUNC(RAM) status_t BOARD_InitPsRam(void)
+__RAMFUNC(SRAM) status_t BOARD_InitPsRam(void)
 {
-	flexspi_device_config_t flashConfig = {
-	    .flexspiRootClk       = 106666667U,
-	    .flashSize            = 0x10000, /* 128Mb/Kbyte */
-	    .CSIntervalUnit       = kFLEXSPI_CsIntervalUnit1SckCycle,
-	    .CSInterval           = 2,
-	    .CSHoldTime           = 3,
-	    .CSSetupTime          = 3,
-	    .dataValidTime        = 2,
-	    .columnspace          = 0,
-	    .enableWordAddress    = 0,
-	    .AWRSeqIndex          = 9,
-	    .AWRSeqNumber         = 1,
-	    .ARDSeqIndex          = 0,
-	    .ARDSeqNumber         = 1,
-	    .AHBWriteWaitUnit     = kFLEXSPI_AhbWriteWaitUnit2AhbCycle,
-	    .AHBWriteWaitInterval = 0,
-	};
+    flexspi_device_config_t flashConfig = {
+        .flexspiRootClk       = 106666667U,
+        .flashSize            = 0x10000, /* 512Mb/Kbyte */
+        .CSIntervalUnit       = kFLEXSPI_CsIntervalUnit1SckCycle,
+        .CSInterval           = 2,
+        .CSHoldTime           = 3,
+        .CSSetupTime          = 3,
+        .dataValidTime        = 2,
+        .columnspace          = 0,
+        .enableWordAddress    = 0,
+        .AWRSeqIndex          = 9,
+        .AWRSeqNumber         = 1,
+        .ARDSeqIndex          = 0,
+        .ARDSeqNumber         = 1,
+        .AHBWriteWaitUnit     = kFLEXSPI_AhbWriteWaitUnit2AhbCycle,
+        .AHBWriteWaitInterval = 0,
+    };
 
 	flexspi_device_config_t psramConfig = {
         .flexspiRootClk       = 106666667U, /* 106MHZ SPI serial clock */
@@ -112,14 +138,13 @@ __RAMFUNC(RAM) status_t BOARD_InitPsRam(void)
         .enableWriteMask      = true,
     };
 
-    uint32_t psramLUT[16] = {
+    uint32_t psramLUT[20] = {
         /* Read Data */
-        [0] = FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR, kFLEXSPI_1PAD, 0xEB, kFLEXSPI_Command_RADDR_SDR, kFLEXSPI_4PAD, 24),
-        [1] = FLEXSPI_LUT_SEQ(kFLEXSPI_Command_DUMMY_SDR, kFLEXSPI_4PAD, 6, kFLEXSPI_Command_READ_SDR, kFLEXSPI_4PAD,
-                              0x04),
+        [0] = FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR, kFLEXSPI_1PAD, 0xEB, kFLEXSPI_Command_RADDR_SDR, kFLEXSPI_4PAD, 0x18),
+        [1] = FLEXSPI_LUT_SEQ(kFLEXSPI_Command_DUMMY_SDR, kFLEXSPI_4PAD, 6, kFLEXSPI_Command_READ_SDR, kFLEXSPI_4PAD, 0x04),
 
         /* Write Data */
-        [4] = FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR, kFLEXSPI_1PAD, 0x38, kFLEXSPI_Command_RADDR_SDR, kFLEXSPI_4PAD, 24),
+        [4] = FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR, kFLEXSPI_1PAD, 0x38, kFLEXSPI_Command_RADDR_SDR, kFLEXSPI_4PAD, 0x18),
         [5] = FLEXSPI_LUT_SEQ(kFLEXSPI_Command_WRITE_SDR, kFLEXSPI_4PAD, 0x00, kFLEXSPI_Command_STOP, kFLEXSPI_1PAD, 0x00),
 
         /* Reset Enable */
@@ -127,6 +152,10 @@ __RAMFUNC(RAM) status_t BOARD_InitPsRam(void)
 
         /* Reset */
         [12] = FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR, kFLEXSPI_1PAD, 0x99, kFLEXSPI_Command_STOP, kFLEXSPI_1PAD, 0x00),
+
+        /* Read ID */
+        [16] = FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR, kFLEXSPI_1PAD, 0x9F, kFLEXSPI_Command_RADDR_SDR, kFLEXSPI_1PAD, 0x18),
+        [17] = FLEXSPI_LUT_SEQ(kFLEXSPI_Command_READ_SDR, kFLEXSPI_1PAD, 0x08, kFLEXSPI_Command_STOP, kFLEXSPI_1PAD, 0),
     };
 
 
@@ -137,47 +166,47 @@ __RAMFUNC(RAM) status_t BOARD_InitPsRam(void)
     status_t status         = kStatus_Success;
     FLEXSPI_Type *flexspi_base = BOARD_FLEXSPI_PSRAM;
 
-	CLOCK_EnableClock(kCLOCK_Flexspi);
-	RESET_ClearPeripheralReset(kFLEXSPI_RST_SHIFT_RSTn);
-	BOARD_SetFlexspiClock(FLEXSPI, 5U, 3U); /* 320M / 3 */
+    CLOCK_EnableClock(kCLOCK_Flexspi);
+    RESET_ClearPeripheralReset(kFLEXSPI_RST_SHIFT_RSTn);
+    BOARD_SetFlexspiClock(FLEXSPI, 5U, 3U); /* 320M / 3 */
 
-	/* Get FLEXSPI default settings and configure the flexspi. */
-	FLEXSPI_GetDefaultConfig(&config);
+    /* Get FLEXSPI default settings and configure the flexspi. */
+    FLEXSPI_GetDefaultConfig(&config);
 
-	/* Init FLEXSPI. */
-	config.rxSampleClock      = kFLEXSPI_ReadSampleClkLoopbackFromDqsPad;
-	config.rxSampleClockPortB = kFLEXSPI_ReadSampleClkLoopbackFromDqsPad;
-	config.rxSampleClockDiff  = false;
-	/*Set AHB buffer size for reading data through AHB bus. */
-	config.ahbConfig.enableAHBPrefetch    = true;
-	config.ahbConfig.enableAHBBufferable  = true;
-	config.ahbConfig.enableAHBCachable    = true;
-	config.ahbConfig.enableReadAddressOpt = true;
-	for (uint8_t i = 1; i < FSL_FEATURE_FLEXSPI_AHB_BUFFER_COUNT - 1; i++)
-	{
-		config.ahbConfig.buffer[i].bufferSize = 0;
-	}
-	/* FlexSPI has total 1KB RX buffer.
-	 * Set DMA0 master to use AHB Rx Buffer0.
-	 */
-	config.ahbConfig.buffer[0].masterIndex    = 10;  /* GDMA */
-	config.ahbConfig.buffer[0].bufferSize     = 512; /* Allocate 512B bytes for DMA0 */
-	config.ahbConfig.buffer[0].enablePrefetch = true;
-	config.ahbConfig.buffer[0].priority       = 0;
-	/* All other masters use last buffer with 512B bytes. */
-	config.ahbConfig.buffer[FSL_FEATURE_FLEXSPI_AHB_BUFFER_COUNT - 1].bufferSize = 512;
+    /* Init FLEXSPI. */
+    config.rxSampleClock      = kFLEXSPI_ReadSampleClkLoopbackFromDqsPad;
+    config.rxSampleClockPortB = kFLEXSPI_ReadSampleClkLoopbackFromDqsPad;
+    config.rxSampleClockDiff  = false;
+    /*Set AHB buffer size for reading data through AHB bus. */
+    config.ahbConfig.enableAHBPrefetch    = true;
+    config.ahbConfig.enableAHBBufferable  = true;
+    config.ahbConfig.enableAHBCachable    = true;
+    config.ahbConfig.enableReadAddressOpt = true;
+    for (uint8_t i = 1; i < FSL_FEATURE_FLEXSPI_AHB_BUFFER_COUNT - 1; i++)
+    {
+        config.ahbConfig.buffer[i].bufferSize = 0;
+    }
+    /* FlexSPI has total 1KB RX buffer.
+     * Set DMA0 master to use AHB Rx Buffer0.
+     */
+    config.ahbConfig.buffer[0].masterIndex    = 10;  /* GDMA */
+    config.ahbConfig.buffer[0].bufferSize     = 512; /* Allocate 512B bytes for DMA0 */
+    config.ahbConfig.buffer[0].enablePrefetch = true;
+    config.ahbConfig.buffer[0].priority       = 0;
+    /* All other masters use last buffer with 512B bytes. */
+    config.ahbConfig.buffer[FSL_FEATURE_FLEXSPI_AHB_BUFFER_COUNT - 1].bufferSize = 512;
 #if !(defined(FSL_FEATURE_FLEXSPI_HAS_NO_MCR0_COMBINATIONEN) && FSL_FEATURE_FLEXSPI_HAS_NO_MCR0_COMBINATIONEN)
-	config.enableCombination = false;
+    config.enableCombination = false;
 #endif
-	FLEXSPI_Init(BOARD_FLEXSPI_PSRAM, &config);
+    FLEXSPI_Init(BOARD_FLEXSPI_PSRAM, &config);
 
     /* Configure flash settings according to serial flash feature. */
-	FLEXSPI_SetFlashConfig(BOARD_FLEXSPI_PSRAM, &flashConfig, kFLEXSPI_PortA1);
+    FLEXSPI_SetFlashConfig(BOARD_FLEXSPI_PSRAM, &flashConfig, kFLEXSPI_PortA1);
 
     /* Configure flash settings according to serial flash feature. */
     FLEXSPI_SetFlashConfig(BOARD_FLEXSPI_PSRAM, &psramConfig, kFLEXSPI_PortB1);
 
-    /* Update bottom LUT table (44-59). */
+    /* Update bottom LUT table (44-63). */
     FLEXSPI_UpdateLUT(BOARD_FLEXSPI_PSRAM, 44U, psramLUT, ARRAY_SIZE(psramLUT));
 
     /* Do software reset. */
@@ -198,6 +227,15 @@ __RAMFUNC(RAM) status_t BOARD_InitPsRam(void)
             break;
         }
 
+        uint16_t id;
+        status = flexspi_hyper_ram_read_id(BOARD_FLEXSPI_PSRAM, (uint32_t*)&id);
+        if (status != kStatus_Success)
+        {
+            status = kStatus_Fail;
+            break;
+        }
+        PRINTF("pSRAM initialized with ID: %x\r\n",id);
+
 #if BOARD_ENABLE_PSRAM_CACHE
         CACHE64_GetDefaultConfig(&cacheCfg);
         /* Suppose:
@@ -206,11 +244,11 @@ __RAMFUNC(RAM) status_t BOARD_InitPsRam(void)
          */
 
         cacheCfg.boundaryAddr[0] = 0x4000000; // flash size Bytes
-        cacheCfg.boundaryAddr[0] = 0x4800000; // flash + psram size Bytes
+        cacheCfg.boundaryAddr[1] = 0x4800000; // flash + psram size Bytes
         cacheCfg.policy[0] = kCACHE64_PolicyWriteThrough; // flash
         cacheCfg.policy[1] = kCACHE64_PolicyWriteThrough; // psram
 
-		CACHE64_Init(CACHE64_POLSEL1, &cacheCfg);
+        CACHE64_Init(CACHE64_POLSEL1, &cacheCfg);
         CACHE64_EnableWriteBuffer(CACHE64_CTRL1, true);
         CACHE64_EnableCache(CACHE64_CTRL1);
 #endif

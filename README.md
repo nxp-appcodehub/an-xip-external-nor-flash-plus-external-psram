@@ -1,81 +1,317 @@
 # NXP Application Code Hub
+
 [<img src="https://mcuxpresso.nxp.com/static/icon/nxp-logo-color.svg" width="100"/>](https://www.nxp.com)
 
 ## XIP from external NOR flash and configuring external pSRAM using multiport FlexSPI module
-*The title should clearly indicate what the example code does. If the example is for an application note, then the document reference (e.g. AN12345) should be appended at the beginning.*
 
-RW61x has a FlexSPI module with two ports that allows you to connect two QSPI/SPI memories allowing to perform XIP from one of them. This application note will guide you step by step how to configure the NOR flash connected to the portA and perform XIP and configure a pSRAM memory connected to the portB and access them through the AHB bus (cache) and IP bus.
+RW61x has a FlexSPI module with two ports that allows you to connect two QSPI/SPI memories allowing to perform "Execution In-Place (XIP)" from one of them. This application note will guide you step by step how to configure the NOR flash connected to the portA and perform XIP and configure a pSRAM memory connected to the portB and access them through the AHB bus using the chace and the IP bus.
 
-*Description should provide a clear explanation of what the code is for, and provide links to any related documentation. If documentation is included in the Github repo then its location should be mentioned here, along with the name of documentation file(s). If the code is a snippet/general software, then a sufficient description must be provided for a developer to fully understand the example, either in this readme or in another document in the repo.*
+![1719515312902](images/README/1719515312902.png)
 
-*If the code is an App SW pack then a link to the software summary page (SSP) on nxp.com must be provided.*
-
-*If the code is a demo, then a link to any related videos on nxp.com.Youtube, and/or other related pages must be provided.*
-
-*For training content you must reference the class training number (e.g. AMP-ENT-T4545), if available. You should also refer the reader to the training workbook and other materials from the class here.*
-
-*Ask yourself - if you were finding this code for the first time, is there enough information to make it useful? Think **QUALITY**.*
-
+The RW612 does not have internal FLASH memory, so all non-volatile executable code has to be stored in an external memory. The FlexSPI module has the capability to perform "Execution In-Place (XIP)" fetching the code from a memory connected to one of its ports and also handling a sencond memory connected to the other port, a pSRAM memory for this example. The boot ROM is in charge of configuring the FlexSPI for the FLASH device that will perfrom the XIP using the "Flash Configuration Block" (Refer to the section FlexSPI NOR Flash boot from the RW61x UserManual for more details) to fetch the executable image.
+**The main challenge of configuring the FlexSPI's 2nd port when the first port performs XIP, is that the FlexSPI module has to be reset to get the new configuration**. This means that the code that configures the FlexSPI's 2nd port is being fetched from the external FLASH using the FlexSPI's 1st port but if the module has to be reset, the MCU will lose the code fetch, causing a CPU bus error. To handle this issue, the code that configures, uses or is somehow related with the FlexSPI has to be executed from internal SRAM, so when the FlexSPI module's configuration and reset happens, the MCU will not get lost and can continue the code execution normally.
 
 #### Boards: FRDM-RW612
+
 #### Categories: Memory
+
 #### Peripherals: SPI, FLASH
+
 #### Toolchains: MCUXpresso IDE
 
 ## Table of Contents
+
 1. [Software](#step1)
 2. [Hardware](#step2)
 3. [Setup](#step3)
 4. [Results](#step4)
-5. [FAQs](#step5) 
+5. [FAQs](#step5)
 6. [Support](#step6)
 7. [Release Notes](#step7)
 
 ## 1. Software<a name="step1"></a>
-*In this section you should provide details of tools and software used (name and version.) Tool chain will already be a tag, but version information is needed. Also include any software that comes from outside of the SDK. Tell the reader where to find the software; for MCUXpresso tools you can reference https://nxp.com/mcuxpresso.*
+
+1. MCU Xpresso IDE v11.9.0 [Build 2144] [2024-01-05] - https://nxp.com/mcuxpresso
+2. FRDM-RW612 SDK 2.16.000 - https://mcuxpresso.nxp.com (SDK Builder)
 
 ## 2. Hardware<a name="step2"></a>
-*In this section you should list hardware required to run the code, per the project file(s) that are included, with any relevant information about portability to other platforms.*
+
+1. FDRM-RW612
 
 ## 3. Setup<a name="step3"></a>
-*For app notes and ap sw packs you can refer the reader to the documentation from the introduction here. For demos and code snippets/general code you should provide a description of how to build and run the code. Steps 1, 2, etc. can be added/deleted as appropriate.*
 
-*For training content you would usually refer the reader to the training workbook here.*
+### 3.1 Step 1 - Compiler Configuration and Code Relocation
 
-### 3.1 Step 1
+As explained in the introduction, all the code related to the FlexSPI has to be recolated to be executed from internal SRAM. To do this, there are 2 strategies used in this example. **The 1st strategy** consist to use a set of linker patch files to set a full file/module to be executed from SRAM as shown:
+
+![1719612349641](images/README/1719612349641.png)
+
+main_data.ldt: This file tells the compiler to place code part (.text) from these specific modules within the data zone, in this case, the SRAM.
+
+```xml
+<#if memory.name=="SRAM">
+       *fsl_flexspi.o (.text*)
+       *fsl_clock.o (.text*)
+       *clock_config.o (.text*)
+       *fsl_reset.o (.text*)
+       *fsl_debug_console.o (.text*)
+       *fsl_cache.o (.text*)
+</#if>
+       *(.data*)
 ```
-code snippet to copy/paste to project
+
+main_text.ldt: This file tells the compiler to exclude the code part (.text) from these specific modues from the code zone, in this case FLASH.
+
+```xml
+*(EXCLUDE_FILE(*fsl_flexspi.o *fsl_clock.o *clock_config.o *fsl_reset.o *fsl_debug_console.o *fsl_cache.o) .text*)
 ```
 
-### 3.2 Step 2
+noinit_noload_section.ldt: This file sets the the section for the non-initialized data in the SRAM.
 
-## 4. Results<a name="step4"></a>
-*For app notes and ap sw packs you can refer the reader to the documentation from the introduction here, or just say "Not applicable for this example". For demos and code snippets/general code you should normally provide a description of what should happen when you run the code.*
+```xml
+/* DEFAULT NOINIT SECTION */
+    .noinit (NOLOAD): ALIGN(4)
+    {
+        _noinit = .;
+        PROVIDE(__start_noinit_RAM = .) ;
+        PROVIDE(__start_noinit_SRAM = .) ;
+        *(.noinit*)
+        . = ALIGN(4) ;
+        _end_noinit = .;
+        PROVIDE(__end_noinit_RAM = .) ;
+        PROVIDE(__end_noinit_SRAM = .) ;
+    } > SRAM AT> SRAM
+```
 
-*For training content you would usually refer the reader to the training workbook here.*
+**The 2nd strategy** consists to set specific functions (not a full file/module) to be executed from SRAM. To do this, the file must include a library with some macros that helps to place code or data in specific zones from the memory map. This is an example on how the function "Example_Routine" forced to be executed from SRAM using the macro "__RAMFUNC(SRAM)" as prefix. Please notice the following routine does not exist in the code, it is just to demonstrate the concept:
+
+```xml
+#include <cr_section_macros.h>
+__RAMFUNC(SRAM) uint32_t Example_Routine(void)
+{
+  .....
+  .....
+}
+```
+
+Once is decided which modules/files and routines have to be executed from SRAM using these strategies, the user must set the memory zones in the project. Since this example is intended to use an external pSRAM connected to the 2nd port of the FlexSPI module, this memory section has to be defined. The FRDM-RW612 board has the APS6404L-3SQN pSRAM memory which is 8 MBytes size, the location in the memory map will be explained later:
+
+![1719616329388](images/README/1719616329388.png)
+
+### 3.2 Step 2 - pSRAM configuration with FLASH Coexistence
+
+This code example is based on the SDK's project named "flexspi_psram_polling_transfer". In the original SDK project, all the code is built to be loaded and executed from internal SRAM due the coexistance problem explained at the introduction, also the intention is just to show how to configure and handle the pSRAM connected to board. In this example the intention is to have both memories, NOR FLASH and pSRAM configured and working together.
+
+We will use the function "BOARD_InitPsRam" in board.c to configure the coexistence with the 2 memories and set it to be executed from internal SRAM. The coexistance configuration includes: Set the flash configuration structure, initialize FlexSPI' ports A and B, configure the Look Up Table (LUT) to keep commands for both memories, reset and ID read to the pSRAM, chace regions and policies for both memories. Will describe only the code and changes within this function.
+
+* "BOARD_InitPsRam" routne relocation to be executed from internal SRAM:
+
+```xml
+#include <cr_section_macros.h>
+__RAMFUNC(SRAM) status_t BOARD_InitPsRam(void)
+{
+  .....
+  .....
+}
+```
+
+* Set configuration structure for the NOR FLASH device that performs XIP. You must be careful with the parameter "flashSize" since it has to be defined in KBytes. The FRDM-RW612 board has NOR FLASH of 512Mbits = 64MBytes = 0x10000 KBytes. Also notice the AWRSeqIndex (wirte command) and ARDSeqIndex (read command), their values are the positions configured by the ROM for the LUT register. Since we are reconfiguring the FlexSPI module, we will keep the same commands positions used by the ROM at boot. If you wan't to check the full NOR FLASH LUT, see the file "flash_config.c"
+
+```xml
+flexspi_device_config_t flashConfig = {
+	    .flexspiRootClk       = 106666667U,
+	    .flashSize            = 0x10000, /* 512Mb/Kbyte */
+	    .CSIntervalUnit       = kFLEXSPI_CsIntervalUnit1SckCycle,
+	    .CSInterval           = 2,
+	    .CSHoldTime           = 3,
+	    .CSSetupTime          = 3,
+	    .dataValidTime        = 2,
+	    .columnspace          = 0,
+	    .enableWordAddress    = 0,
+	    .AWRSeqIndex          = 9,
+	    .AWRSeqNumber         = 1,
+	    .ARDSeqIndex          = 0,
+	    .ARDSeqNumber         = 1,
+	    .AHBWriteWaitUnit     = kFLEXSPI_AhbWriteWaitUnit2AhbCycle,
+	    .AHBWriteWaitInterval = 0,
+	};
+```
+
+* Configure the pSRAM LUT that contains the commands Read, Write, Reset, Reset Enable and Read ID. When setting this LUT we must be careful not to overwrite the FLASH LUT configured by the ROM at boot, so we will **add an offset** to the pSRAM LUT when calling the "FLEXSPI\_UpdateLUT" routine. The LUT register is 256Bytes size, each entry in the LUT is 4Bytes and ech command can be composed of 16Bytes, this means the FlexSPI can handle up to 16 commands. These commands have to be shared between the NOR FLASH and the pSRAM. For this example the pSRAM commands starts at index 11 using the offset 44 when configuring its LUT.
+
+```xml
+uint32_t psramLUT[20] = {
+        /* Read Data */
+        [0] = FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR, kFLEXSPI_1PAD, 0xEB, kFLEXSPI_Command_RADDR_SDR, kFLEXSPI_4PAD, 0x18),
+        [1] = FLEXSPI_LUT_SEQ(kFLEXSPI_Command_DUMMY_SDR, kFLEXSPI_4PAD, 6, kFLEXSPI_Command_READ_SDR, kFLEXSPI_4PAD, 0x04),
+
+        /* Write Data */
+        [4] = FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR, kFLEXSPI_1PAD, 0x38, kFLEXSPI_Command_RADDR_SDR, kFLEXSPI_4PAD, 0x18),
+        [5] = FLEXSPI_LUT_SEQ(kFLEXSPI_Command_WRITE_SDR, kFLEXSPI_4PAD, 0x00, kFLEXSPI_Command_STOP, kFLEXSPI_1PAD, 0x00),
+
+        /* Reset Enable */
+        [8] = FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR, kFLEXSPI_1PAD, 0x66, kFLEXSPI_Command_STOP, kFLEXSPI_1PAD, 0x00),
+
+        /* Reset */
+        [12] = FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR, kFLEXSPI_1PAD, 0x99, kFLEXSPI_Command_STOP, kFLEXSPI_1PAD, 0x00),
+
+       /* Read ID */
+        [16] = FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR, kFLEXSPI_1PAD, 0x9F, kFLEXSPI_Command_RADDR_SDR, kFLEXSPI_1PAD, 0x18),
+        [17] = FLEXSPI_LUT_SEQ(kFLEXSPI_Command_READ_SDR, kFLEXSPI_1PAD, 0x08, kFLEXSPI_Command_STOP, kFLEXSPI_1PAD, 0),
+    };
+```
+
+```xml
+/* Update bottom LUT table (44-63). */
+    FLEXSPI_UpdateLUT(BOARD_FLEXSPI_PSRAM, 44U, psramLUT, ARRAY_SIZE(psramLUT));
+```
+
+* After the LUTs, FlexSPI ports and module are configured, we will test if the pSRAM is working properly performing the reset sequence and reading the ID. The ID read must be 0x5DXX where the 5D indicate the die is correct and the XX is th manufacturing ID and may vary. Check the APS6404L datasheet for more details.
+
+```xml
+/* Reset PSRAM */
+status = flexspi_hyper_ram_run_seq(BOARD_FLEXSPI_PSRAM, 13U);
+if (status == kStatus_Success)
+{
+    status = flexspi_hyper_ram_run_seq(BOARD_FLEXSPI_PSRAM, 14U);
+}
+if (status != kStatus_Success)
+{
+    status = kStatus_Fail;
+    break;
+}
+  
+uint16_t id;
+status = flexspi_hyper_ram_read_id(BOARD_FLEXSPI_PSRAM, (uint32_t*)&id);
+if (status != kStatus_Success)
+{
+    status = kStatus_Fail;
+    break;
+}
+PRINTF("pSRAM initialized with ID: %x\r\n",id);
+```
+
+* If the pSRAM is working properly we'll proceed to configugure the cache zones and policies. Since the FRDM-RW612 board has a NOR FLASH of 64MBytes and a pSRAM of 8MBytes, the first zone will cover the FLASH size and the second zone will cover the pSRAM size. The cache policies will specific for each zone configured. For more details review the RW612 UserManual chapters 10 & 11 related to the cache.
+
+```xml
+cacheCfg.boundaryAddr[0] = 0x4000000; // flash size Bytes
+cacheCfg.boundaryAddr[1] = 0x4800000; // flash + psram size Bytes
+cacheCfg.policy[0] = kCACHE64_PolicyWriteThrough; // flash
+cacheCfg.policy[1] = kCACHE64_PolicyWriteThrough; // psram
+```
+
+### 3.3 Step 3 - Memories Addressing
+
+The FlexSPI modue can address both ports through 2 different data buses. IP bus and AHB bus as shown in the module's block diagram:
+
+![1719702751493](images/README/1719702751493.png)
+
+The AHB bus access is controlled by the cache while the IP bus acces is controlled directly by the FlexSPI module. Normally the read/write data commands are issued through the AHB bus and the specific commands like resets and read/write to memory configuration registers are issued through the IP bus, but this last one is not limited to such commands only, you can issue read/write data commands as well.
+
+The FlexSPI module does not have any register or any configuration to issue a command to a specific memory other than the memory map configured where the Port A has precedence to the Port B. This means if you want to issue a command to the pSRAM you need to **set the FLASH size as offset** to the pSRAM address you want read/write.
+
+![1719703617925](images/README/1719703617925.png)
+
+![1719703679838](images/README/1719703679838.png)
+
+This is defined in the RW612 UserManual chaprter "12.2.4 AHB access memory map", however this same concept applies to the IP bus.
+
+You can see how to address the pSRAM via IP Bus in the example code when issuing the reset and the read ID commands, where the routines checks if there is a memory size configured in the port A. If so, then the size configured is added as an offet to the address of the pSRAM at port B.
+
+```xml
+static status_t flexspi_hyper_ram_read_id(FLEXSPI_Type *base, uint32_t *buffer)
+{
+    .......
+    .......
+
+    /* Write data */
+    if(base->FLSHCR0[0] != 0){
+        /*If portA1 memory size is configured, then add the size to the portB address*/
+        flashXfer.deviceAddress = (0 + (base->FLSHCR0[0] * 1024));
+    }else{
+    	/*If portA1 memory not configured, then no change to the address*/
+        flashXfer.deviceAddress = 0;
+    }
+
+    .......
+    .......
+}
+```
+
+To handle the addessing through the AHB Bus, you need to access the memories through the cache address space. The chapter 10.1 "FlexSPI Cache" defines two cache address spaces for each one of the FlexSPI ports. The address space for the portA goes from 0x08000000 to 0x20000000 and the address space for the portB goes from 0x28000000~0x40000000. However this can be confusing due this address spaces only applies when you have only one of the ports configured, not both. If both ports are configured, just like this example, you need to add the the PortA size configured as offset to handle any address to the PortB address space, very similar as done for the IP bus. For this code example, the start of address space for the PortB (pSRAM) must be defined as 0x28000000 + PortA size = 0x28000000 + 64MBytes = 0x2C000000.
+
+```xml
+#define PSRAM_CACHE_START_ADDR             0x2C000000U
+#define PSRAM_CACHE_END_ADDR               0x2C800000U
+```
+
+## 4. Results <a name="step4"></a>
+
+This code example perform 3 main tests to the PortB device performing XIP from PortA:
+
+* Read/Write to all pSRAM memory address range through the IP Bus: This test uses IP routines for read and write to the pSRAM memory. At first writes 0xFFFFFFFF's to all memory range (8MBytes), then writes an incremental number from 0-0x1FFFFF to cover all memory ranges and then reads and compares if the incremental number matches agins what is written. If the comparation fails, the address, the read value and the expected value are reported as a failure in the test. If all the numbers match, then you will get a serial message "IP Test completed!"
+
+  ```xml
+  void psram_ip_test(void)
+  {
+    .....
+    .....
+  }
+  ```
+* Read/Write to all pSRAM memory address range through the AHB Bus: This test uses the PortB cache address space to access the pSRAM memory. At first writes 0xFFFFFFFF's to all memory range (8MBytes) directly through , then writes an incremental number from 0-0x1FFFFF to cover all memory ranges and then reads and compares if the incremental number matches agins what is written. If the comparation fails, the address, the read value and the expected value are reported as a failure in the test. If all the numbers match, then you will get a serial message "AHB Test completed!"
+
+  ```xml
+  void psram_ahb_test(void)
+  {
+    .....
+    .....
+  }
+  ```
+* Read/Write to a non-init buffer allocated at pSRAM address space: The code example defines a 4KByte buffer that will be allocated in the pSRAM cache address space by the linker. The test first checks the address of the buffer to verify if it was allocated in the right address space. If the buffer is allocated between 0x2C000000 to 0x2C800000 address, you will get a serial message "pSRAM buffer right allocated at cache zone:" with the address of the buffer, then the test continues, if not, the test fails and you will get a serial message "pSRAM buffer not right allocated at cache zone:" with the address of the buffer. The second phase of the test a pattern "0xAABBCCDD" is written at index 0 and it is decremented trhough the index 1024. The test will read all the data in the buffer and compares it agains to was written. If the test fails, the index, the read data and the expected data will be reported. If the test passed you will get a serial message "pSRAM buffer writing succeeded in all range".
+
+  ```xml
+  #define PSRAM_BUFFER_SIZE                  1024U
+  #define PSRAM_CACHE_START_ADDR             0x2C000000U
+  #define PSRAM_CACHE_END_ADDR               0x2C800000U
+
+  static __NOINIT(PSRAM) uint32_t psram_nonInit_buffer[PSRAM_BUFFER_SIZE];
+
+  void psram_nonInit_buffer_test(void)
+  {
+    .....
+    .....
+  }
+  ```
 
 ## 5. FAQs<a name="step5"></a>
-*Include FAQs here if appropriate. If there are none, then state "No FAQs have been identified for this project".*
+
+"No FAQs have been identified for this project".
 
 ## 6. Support<a name="step6"></a>
+
 *Provide URLs for help here.*
 
 #### Project Metadata
+
 <!----- Boards ----->
-[![Board badge](https://img.shields.io/badge/Board-FRDM&ndash;RW612-blue)](https://github.com/search?q=org%3Anxp-appcodehub+FRDM-RW612+in%3Areadme&type=Repositories)
+
+[![Board badge](https://img.shields.io/badge/Board-FRDM–RW612-blue)](https://github.com/search?q=org%3Anxp-appcodehub+FRDM-RW612+in%3Areadme&type=Repositories)
 
 <!----- Categories ----->
+
 [![Category badge](https://img.shields.io/badge/Category-MEMORY-yellowgreen)](https://github.com/search?q=org%3Anxp-appcodehub+memory+in%3Areadme&type=Repositories)
 
 <!----- Peripherals ----->
+
 [![Peripheral badge](https://img.shields.io/badge/Peripheral-SPI-yellow)](https://github.com/search?q=org%3Anxp-appcodehub+spi+in%3Areadme&type=Repositories) [![Peripheral badge](https://img.shields.io/badge/Peripheral-FLASH-yellow)](https://github.com/search?q=org%3Anxp-appcodehub+flash+in%3Areadme&type=Repositories)
 
 <!----- Toolchains ----->
+
 [![Toolchain badge](https://img.shields.io/badge/Toolchain-MCUXPRESSO%20IDE-orange)](https://github.com/search?q=org%3Anxp-appcodehub+mcux+in%3Areadme&type=Repositories)
 
 Questions regarding the content/correctness of this example can be entered as Issues within this GitHub repository.
 
->**Warning**: For more general technical questions regarding NXP Microcontrollers and the difference in expected funcionality, enter your questions on the [NXP Community Forum](https://community.nxp.com/)
+> **Warning**: For more general technical questions regarding NXP Microcontrollers and the difference in expected funcionality, enter your questions on the [NXP Community Forum](https://community.nxp.com/)
 
 [![Follow us on Youtube](https://img.shields.io/badge/Youtube-Follow%20us%20on%20Youtube-red.svg)](https://www.youtube.com/@NXP_Semiconductors)
 [![Follow us on LinkedIn](https://img.shields.io/badge/LinkedIn-Follow%20us%20on%20LinkedIn-blue.svg)](https://www.linkedin.com/company/nxp-semiconductors)
@@ -83,7 +319,8 @@ Questions regarding the content/correctness of this example can be entered as Is
 [![Follow us on Twitter](https://img.shields.io/badge/Twitter-Follow%20us%20on%20Twitter-white.svg)](https://twitter.com/NXP)
 
 ## 7. Release Notes<a name="step7"></a>
-| Version | Description / Update                           | Date                        |
-|:-------:|------------------------------------------------|----------------------------:|
-| 1.0     | Initial release on Application Code Hub        | June 11<sup>th</sup> 2024 |
 
+
+| Version | Description / Update                    |           Date |
+| :-----: | --------------------------------------- | -------------: |
+|   1.0   | Initial release on Application Code Hub | June 11th 2024 |

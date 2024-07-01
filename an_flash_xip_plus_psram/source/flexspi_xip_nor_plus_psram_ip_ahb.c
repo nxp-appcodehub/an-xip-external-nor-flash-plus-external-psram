@@ -59,13 +59,13 @@ status_t flexspi_hyper_ram_ipcommand_write_data(FLEXSPI_Type *base, uint32_t add
     status_t status;
 
     /* Write data */
-	if(base->FLSHCR0[0] != 0){
-		/*If portA1 memory size is configured, then add the size to the portB address*/
-		flashXfer.deviceAddress = (address + (base->FLSHCR0[0] * 1024));
-	}else{
-		/*If portA1 memory not configured, then no change to the address*/
-		flashXfer.deviceAddress = address;
-	}
+    if(base->FLSHCR0[0] != 0){
+        /*If portA1 memory size is configured, then add the size to the portB address*/
+        flashXfer.deviceAddress = (address + (base->FLSHCR0[0] * 1024));
+    }else{
+        /*If portA1 memory not configured, then no change to the address*/
+        flashXfer.deviceAddress = address;
+    }
     flashXfer.cmdType       = kFLEXSPI_Write;
     flashXfer.SeqNumber     = 1;
     flashXfer.seqIndex      = HYPERRAM_CMD_LUT_SEQ_IDX_WRITEDATA;
@@ -83,13 +83,13 @@ status_t flexspi_hyper_ram_ipcommand_read_data(FLEXSPI_Type *base, uint32_t addr
     status_t status;
 
     /* Write data */
-	if(base->FLSHCR0[0] != 0){
-		/*If portA1 memory size is configured, then add the size to the portB address*/
-		flashXfer.deviceAddress = (address + (base->FLSHCR0[0] * 1024));
-	}else{
-		/*If portA1 memory not configured, then no change to the address*/
-		flashXfer.deviceAddress = address;
-	}
+    if(base->FLSHCR0[0] != 0){
+        /*If portA1 memory size is configured, then add the size to the portB address*/
+        flashXfer.deviceAddress = (address + (base->FLSHCR0[0] * 1024));
+    }else{
+        /*If portA1 memory not configured, then no change to the address*/
+        flashXfer.deviceAddress = address;
+    }
     flashXfer.cmdType       = kFLEXSPI_Read;
     flashXfer.SeqNumber     = 1;
     flashXfer.seqIndex      = HYPERRAM_CMD_LUT_SEQ_IDX_READDATA;
@@ -109,8 +109,8 @@ void psram_ip_test(void)
     uint32_t read_val;
 
     for(test_val = 0; test_val < PSRAM_SIZE/4; test_val++) {
-    	set_val = 0xFFFFFFFF;
-    	status = flexspi_hyper_ram_ipcommand_write_data(EXAMPLE_FLEXSPI, test_val*4, (uint32_t *)&set_val, 4);
+        set_val = 0xFFFFFFFF;
+        status = flexspi_hyper_ram_ipcommand_write_data(EXAMPLE_FLEXSPI, test_val*4, (uint32_t *)&set_val, 4);
         if (status != kStatus_Success)
         {
             PRINTF("0 Command Write Failure 0x%x - 0x%x, Failure code : 0x%x!\r\n", test_val*4, test_val, status);
@@ -119,7 +119,7 @@ void psram_ip_test(void)
 
     /* IP Test */
     for(test_val = 0; test_val < PSRAM_SIZE/4; test_val++) {
-    	status = flexspi_hyper_ram_ipcommand_write_data(EXAMPLE_FLEXSPI, test_val*4, (uint32_t *)&test_val, 4);
+        status = flexspi_hyper_ram_ipcommand_write_data(EXAMPLE_FLEXSPI, test_val*4, (uint32_t *)&test_val, 4);
         if (status != kStatus_Success)
         {
             PRINTF("1 Command Write Failure 0x%x - 0x%x, Failure code : 0x%x!\r\n", test_val*4, test_val, status);
@@ -128,16 +128,16 @@ void psram_ip_test(void)
 
     /* Check the memory with IP */
     for(uint32_t test_val = 0; test_val < PSRAM_SIZE/4; test_val++) {
-    	read_val = 0;
-    	status = flexspi_hyper_ram_ipcommand_read_data(EXAMPLE_FLEXSPI, test_val*4, (uint32_t *)&read_val, 4);
+        read_val = 0;
+        status = flexspi_hyper_ram_ipcommand_read_data(EXAMPLE_FLEXSPI, test_val*4, (uint32_t *)&read_val, 4);
         if (status != kStatus_Success)
         {
             PRINTF("Command Read Failure 0x%x - 0x%x, Failure code : 0x%x!\r\n", test_val*4, test_val, status);
         }
         if(test_val != read_val) {
-        	PRINTF(" 1 Compare error at address : 0x%x!\r\n", test_val*4);
-        	PRINTF(" 1 Read value 0x%x, Expected value 0x%x\r\n", read_val, test_val);
-        	break;
+            PRINTF(" 1 Compare error at address : 0x%x!\r\n", test_val*4);
+            PRINTF(" 1 Read value 0x%x, Expected value 0x%x\r\n", read_val, test_val);
+            break;
         }
     }
 
@@ -159,22 +159,22 @@ void psram_ahb_test(void)
 
     /* Fill the memory with all FFs */
     for(test_val = 0; test_val < PSRAM_SIZE/4; test_val++) {
-    	ahb_ptr[test_val] = 0xFFFFFFFF;
+        ahb_ptr[test_val] = 0xFFFFFFFF;
     }
 
     /* Fill the memory with a sequence on the Cache */
     for(test_val = 0; test_val < PSRAM_SIZE/4; test_val++) {
-    	ahb_ptr[test_val] = test_val;
+        ahb_ptr[test_val] = test_val;
     }
 
     /* Check the sequence with the Cache */
     for(test_val = 0; test_val < PSRAM_SIZE/4; test_val++) {
-    	if(ahb_ptr[test_val] != test_val) {
-    		PRINTF("Compare error at address : 0x%x!\r\n", ahb_ptr2);
-    		PRINTF("Read value 0x%x, Expected value 0x%x\r\n", ahb_ptr[test_val], test_val);
-    		break;
-    	}
-    	ahb_ptr2++;
+        if(ahb_ptr[test_val] != test_val) {
+            PRINTF("Compare error at address : 0x%x!\r\n", ahb_ptr2);
+            PRINTF("Read value 0x%x, Expected value 0x%x\r\n", ahb_ptr[test_val], test_val);
+            break;
+        }
+        ahb_ptr2++;
     }
 
     PRINTF("AHB Test completed!\r\n");
@@ -183,36 +183,36 @@ void psram_ahb_test(void)
 
 void psram_nonInit_buffer_test(void)
 {
-	uint32_t psram_buffer_add = (uint32_t)&psram_nonInit_buffer;
-	uint32_t index;
-	status_t result_flag = kStatus_Success;
+    uint32_t psram_buffer_add = (uint32_t)&psram_nonInit_buffer;
+    uint32_t index;
+    status_t result_flag = kStatus_Success;
 
-	/*psram_nonInit_buffer must be allocated in the psram cache zone:
-	  0x2C000000 <= psram_buffer_add < 0x2C800000 */
-	if((PSRAM_CACHE_START_ADDR <= psram_buffer_add) && (psram_buffer_add < PSRAM_CACHE_END_ADDR))
-	{
-		PRINTF("pSRAM buffer right allocated at cache zone: 0x%x\r\n",psram_buffer_add);
-		for(index=0;index<PSRAM_BUFFER_SIZE;index++)
-		{
-			psram_nonInit_buffer[index] = PSRAM_BUFFER_PATTERN - index;
-		}
-		for(index=0;index<PSRAM_BUFFER_SIZE;index++)
-		{
-			if(psram_nonInit_buffer[index] != (PSRAM_BUFFER_PATTERN - index))
-			{
-				PRINTF("Fail writing to pSRAM buffer at index: 0x%x\r\n",index);
-				result_flag = kStatus_Fail;
-				break;
-			}
-		}
-		if(result_flag == kStatus_Success)
-		{
-			PRINTF("pSRAM buffer writing succeeded in all range\r\n");
-		}
-	}else
-	{
-		PRINTF("pSRAM buffer not right allocated at cache zone: 0x%x\r\n",psram_buffer_add);
-	}
+    /*psram_nonInit_buffer must be allocated in the psram cache zone:
+      0x2C000000 <= psram_buffer_add < 0x2C800000 */
+    if((PSRAM_CACHE_START_ADDR <= psram_buffer_add) && (psram_buffer_add < PSRAM_CACHE_END_ADDR))
+    {
+        PRINTF("pSRAM buffer right allocated at cache zone: 0x%x\r\n",psram_buffer_add);
+        for(index=0;index<PSRAM_BUFFER_SIZE;index++)
+        {
+            psram_nonInit_buffer[index] = PSRAM_BUFFER_PATTERN - index;
+        }
+        for(index=0;index<PSRAM_BUFFER_SIZE;index++)
+        {
+            if(psram_nonInit_buffer[index] != (PSRAM_BUFFER_PATTERN - index))
+            {
+                PRINTF("Fail writing to pSRAM buffer at index: 0x%x\r\n",index);
+                result_flag = kStatus_Fail;
+                break;
+            }
+        }
+        if(result_flag == kStatus_Success)
+        {
+            PRINTF("pSRAM buffer writing succeeded in all range\r\n");
+        }
+    }else
+    {
+        PRINTF("pSRAM buffer not right allocated at cache zone: 0x%x\r\n",psram_buffer_add);
+    }
 }
 
 
