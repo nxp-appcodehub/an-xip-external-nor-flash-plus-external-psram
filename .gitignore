@@ -3,6 +3,9 @@
 /AzureRTOS_TAD_logs/
 /FreeRTOS_TAD_logs/
 /ZephyrRTOS_TAD_logs/
-/an_flash_xip_plus_psram/Debug/
+/an_flash_xip_plus_psram/Debug/*
+!/an_flash_xip_plus_psram/Debug/an_flash_xip_plus_psram_Debug.ld
+/an_flash_xip_plus_psram/Release/*
+!/an_flash_xip_plus_psram/Debug/an_flash_xip_plus_psram_Release.ld
 /an_flash_xip_plus_psram/.settings/
 /an_flash_xip_plus_psram/an_flash_xip_plus_psram JLink Debug.launch
