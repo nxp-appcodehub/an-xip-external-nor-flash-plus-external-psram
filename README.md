@@ -9,7 +9,7 @@ RW61x has a FlexSPI module with two ports that allows you to connect two QSPI/SP
 ![1719515312902](images/README/1719515312902.png)
 
 The RW612 does not have internal FLASH memory, so all non-volatile executable code has to be stored in an external memory. The FlexSPI module has the capability to perform "Execution In-Place (XIP)" fetching the code from a memory connected to one of its ports and also handling a sencond memory connected to the other port, a pSRAM memory for this example. The boot ROM is in charge of configuring the FlexSPI for the FLASH device that will perfrom the XIP using the "Flash Configuration Block" (Refer to the section FlexSPI NOR Flash boot from the RW61x UserManual for more details) to fetch the executable image.
-**The main challenge of configuring the FlexSPI's 2nd port when the first port performs XIP, is that the FlexSPI module has to be reset to get the new configuration**. This means that the code that configures the FlexSPI's 2nd port is being fetched from the external FLASH using the FlexSPI's 1st port but if the module has to be reset, the MCU will lose the code fetch, causing a CPU bus error. To handle this issue, the code that configures, uses or is somehow related with the FlexSPI has to be executed from internal SRAM, so when the FlexSPI module's configuration and reset happens, the MCU will not get lost and can continue the code execution normally.
+**The main challenge of configuring the FlexSPI's 2nd port when the first port performs XIP, is that the FlexSPI module has to be reset to get the new configuration**. This means the code that configures the FlexSPI's 2nd port is being fetched from the external FLASH using the FlexSPI's 1st port but if the module has to be reset, the MCU will lose the code fetch, causing a CPU bus error. To handle this issue, the code that configures, uses or is somehow related with the FlexSPI has to be executed from internal SRAM, so when the FlexSPI module's configuration and reset happens, the MCU will not get lost and can continue the code execution normally.
 
 #### Boards: FRDM-RW612
 
@@ -83,7 +83,7 @@ noinit_noload_section.ldt: This file sets the the section for the non-initialize
     } > SRAM AT> SRAM
 ```
 
-**The 2nd strategy** consists to set specific functions (not a full file/module) to be executed from SRAM. To do this, the file must include a library with some macros that helps to place code or data in specific zones from the memory map. This is an example on how the function "Example_Routine" forced to be executed from SRAM using the macro "__RAMFUNC(SRAM)" as prefix. Please notice the following routine does not exist in the code, it is just to demonstrate the concept:
+**The 2nd strategy** consists to set specific functions (not a full file/module) to be executed from SRAM. To do this, the file must include a library with some macros that helps to place code or data in specific zones from the memory map. This is an example on how the function "Example_Routine" is forced to be executed from SRAM using the macro "__RAMFUNC(SRAM)" as prefix. Please notice the following routine does not exist in the code, it is just to demonstrate the concept:
 
 ```xml
 #include <cr_section_macros.h>
@@ -102,7 +102,7 @@ Once is decided which modules/files and routines have to be executed from SRAM u
 
 This code example is based on the SDK's project named "flexspi_psram_polling_transfer". In the original SDK project, all the code is built to be loaded and executed from internal SRAM due the coexistance problem explained at the introduction, also the intention is just to show how to configure and handle the pSRAM connected to board. In this example the intention is to have both memories, NOR FLASH and pSRAM configured and working together.
 
-We will use the function "BOARD_InitPsRam" in board.c to configure the coexistence with the 2 memories and set it to be executed from internal SRAM. The coexistance configuration includes: Set the flash configuration structure, initialize FlexSPI' ports A and B, configure the Look Up Table (LUT) to keep commands for both memories, reset and ID read to the pSRAM, chace regions and policies for both memories. Will describe only the code and changes within this function.
+We will use the function "BOARD_InitPsRam" in board.c to configure the coexistence with the 2 memories and set it to be executed from internal SRAM. The coexistance configuration includes: Set the flash configuration structure, initialize FlexSPI' ports A and B, configure the Look Up Table (LUT) to keep commands for both memories, reset and ID read to the pSRAM, Cache regions and policies for both memories. We will only cover the code changes within this function.
 
 * "BOARD_InitPsRam" routne relocation to be executed from internal SRAM:
 
@@ -162,11 +162,19 @@ uint32_t psramLUT[20] = {
 ```
 
 ```xml
+FLEXSPI_Init(BOARD_FLEXSPI_PSRAM, &config);
+
+/* Configure flash settings according to serial flash feature. */
+FLEXSPI_SetFlashConfig(BOARD_FLEXSPI_PSRAM, &flashConfig, kFLEXSPI_PortA1);
+
+/* Configure flash settings according to serial flash feature. */
+FLEXSPI_SetFlashConfig(BOARD_FLEXSPI_PSRAM, &psramConfig, kFLEXSPI_PortB1);
+
 /* Update bottom LUT table (44-63). */
-    FLEXSPI_UpdateLUT(BOARD_FLEXSPI_PSRAM, 44U, psramLUT, ARRAY_SIZE(psramLUT));
+FLEXSPI_UpdateLUT(BOARD_FLEXSPI_PSRAM, 44U, psramLUT, ARRAY_SIZE(psramLUT));
 ```
 
-* After the LUTs, FlexSPI ports and module are configured, we will test if the pSRAM is working properly performing the reset sequence and reading the ID. The ID read must be 0x5DXX where the 5D indicate the die is correct and the XX is th manufacturing ID and may vary. Check the APS6404L datasheet for more details.
+* After the LUTs, FlexSPI ports and module are configured, we will test if the pSRAM is working properly performing the reset sequence and reading the ID. The ID value must be 0x5DXX where the 5D indicates the die is correct and the XX is the manufacturing ID and may vary. Check the APS6404L datasheet for more details.
 
 ```xml
 /* Reset PSRAM */
@@ -191,7 +199,7 @@ if (status != kStatus_Success)
 PRINTF("pSRAM initialized with ID: %x\r\n",id);
 ```
 
-* If the pSRAM is working properly we'll proceed to configugure the cache zones and policies. Since the FRDM-RW612 board has a NOR FLASH of 64MBytes and a pSRAM of 8MBytes, the first zone will cover the FLASH size and the second zone will cover the pSRAM size. The cache policies will specific for each zone configured. For more details review the RW612 UserManual chapters 10 & 11 related to the cache.
+* If the pSRAM is working properly we'll proceed to configugure the cache zones and policies. Since the FRDM-RW612 board has a NOR FLASH of 64MBytes and a pSRAM of 8MBytes, the first zone will cover the FLASH size and the second zone will cover the pSRAM size. The cache policies are specific for each zone configured. For more details, review the RW612 UserManual chapters 10 & 11 related to the cache.
 
 ```xml
 cacheCfg.boundaryAddr[0] = 0x4000000; // flash size Bytes
@@ -202,7 +210,7 @@ cacheCfg.policy[1] = kCACHE64_PolicyWriteThrough; // psram
 
 ### 3.3 Step 3 - Memories Addressing
 
-The FlexSPI modue can address both ports through 2 different data buses. IP bus and AHB bus as shown in the module's block diagram:
+The FlexSPI modue can address both ports through 2 different data buses. These are the IP bus and the AHB bus as shown in the module's block diagram:
 
 ![1719702751493](images/README/1719702751493.png)
 
