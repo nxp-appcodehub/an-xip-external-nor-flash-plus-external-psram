@@ -5,7 +5,7 @@
  * Generated linker script file for RW612
  * Created from linkscript.ldt by FMCreateLinkLibraries
  * Using Freemarker v2.3.30
- * MCUXpresso IDE v11.9.0 [Build 2144] [2024-01-05] on Jun 27, 2024, 12:51:31 PM
+ * MCUXpresso IDE v11.9.0 [Build 2144] [2024-01-05] on Jul 9, 2024, 12:30:47 PM
  */
 
 INCLUDE "an_flash_xip_plus_psram_Debug_library.ld"
@@ -52,6 +52,7 @@ SECTIONS
         /* End of Global Section Table */
 
         *(.after_vectors*)
+
 
         *(EXCLUDE_FILE(*fsl_flexspi.o *fsl_clock.o *clock_config.o *fsl_reset.o *fsl_debug_console.o *fsl_cache.o) .text*)
        *(.rodata .rodata.* .constdata .constdata.*)
@@ -114,6 +115,7 @@ SECTIONS
        KEEP(*(CodeQuickAccess))
        KEEP(*(DataQuickAccess))
        *(RamFunction)
+
        *fsl_flexspi.o (.text*)
        *fsl_clock.o (.text*)
        *clock_config.o (.text*)
@@ -169,6 +171,7 @@ SECTIONS
        PROVIDE(__end_noinit_RAM2 = .) ;
        PROVIDE(__end_noinit_PSRAM = .) ;
     } > PSRAM AT> PSRAM
+
     /* DEFAULT NOINIT SECTION */
     .noinit (NOLOAD): ALIGN(4)
     {
@@ -181,7 +184,6 @@ SECTIONS
         PROVIDE(__end_noinit_RAM = .) ;
         PROVIDE(__end_noinit_SRAM = .) ;
     } > SRAM AT> SRAM
-
     /* Reserve and place Heap within memory map */
     _HeapSize = 0x1000;
     .heap (NOLOAD) :  ALIGN(4)

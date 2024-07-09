@@ -1,3 +1,4 @@
+
 <#if memory.name=="SRAM">
        *fsl_flexspi.o (.text*)
        *fsl_clock.o (.text*)
