@@ -3,7 +3,7 @@ NXP Software Content Register
 Package:                    an_flash_xip_plus_psram
 
 Version:                    1.0
-Outgoing License:           LA_OPT_Online Code Hosting NXP_Software_License - v1.2 October 2023 
+Outgoing License:           LA_OPT_Online Code Hosting NXP_Software_License - v57 July 2024 
 License file:               License.txt
 Description and comments:   Application note demonstrating how to perform XIP from
                             external NOR and use a psram on both ports of the FlexSPI
