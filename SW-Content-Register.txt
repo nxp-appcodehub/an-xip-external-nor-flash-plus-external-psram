@@ -9,7 +9,7 @@ Description and comments:   Application note demonstrating how to perform XIP fr
                             external NOR and use a psram on both ports of the FlexSPI
                             using the RW612-FRDM board.							
                             
-Release Location:           https://github.com/nxp-appcodehub/an_flash_xip_plus_psram
+Release Location:           https://github.com/nxp-appcodehub/an-xip-external-nor-flash-plus-external-psram
 Origin:                     NXP (BSD-3-clause)
                             NXP (Proprietary)
                             CMSIS (Apache-2.0) - https://github.com/ARM-software/CMSIS_5/releases/tag/5.8.0
