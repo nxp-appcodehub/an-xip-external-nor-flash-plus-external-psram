@@ -5,7 +5,7 @@
  * Generated linker script file for RW612
  * Created from linkscript.ldt by FMCreateLinkLibraries
  * Using Freemarker v2.3.30
- * MCUXpresso IDE v11.9.0 [Build 2144] [2024-01-05] on Jul 9, 2024, 12:30:47 PM
+ * MCUXpresso IDE v11.9.0 [Build 2144] [2024-01-05] on Aug 12, 2024, 4:18:30 PM
  */
 
 INCLUDE "an_flash_xip_plus_psram_Debug_library.ld"

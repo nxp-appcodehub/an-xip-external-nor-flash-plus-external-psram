@@ -5,7 +5,7 @@
  * Generated linker script file for RW612
  * Created from linkscript.ldt by FMCreateLinkLibraries
  * Using Freemarker v2.3.30
- * MCUXpresso IDE v11.9.0 [Build 2144] [2024-01-05] on Jul 9, 2024, 12:30:55 PM
+ * MCUXpresso IDE v11.9.0 [Build 2144] [2024-01-05] on Aug 12, 2024, 4:16:47 PM
  */
 
 INCLUDE "an_flash_xip_plus_psram_Release_library.ld"
@@ -35,10 +35,10 @@ SECTIONS
         . = ALIGN(4) ;
         __section_table_start = .;
         __data_section_table = .;
-        LONG((LOADADDR(.data) - LOADADDR(.text)) + __base_SRAM);
+        LONG(LOADADDR(.data));
         LONG(    ADDR(.data));
         LONG(  SIZEOF(.data));
-        LONG((LOADADDR(.data_RAM2) - LOADADDR(.text)) + __base_SRAM);
+        LONG(LOADADDR(.data_RAM2));
         LONG(    ADDR(.data_RAM2));
         LONG(  SIZEOF(.data_RAM2));
         __data_section_table_end = .;
@@ -57,7 +57,7 @@ SECTIONS
         *(EXCLUDE_FILE(*fsl_flexspi.o *fsl_clock.o *clock_config.o *fsl_reset.o *fsl_debug_console.o *fsl_cache.o) .text*)
        *(.rodata .rodata.* .constdata .constdata.*)
        . = ALIGN(4);
-    } > SRAM AT> QSPI_FLASH
+    } > QSPI_FLASH
     /*
      * for exception handling/unwind - some Newlib functions (in common
      * with C++ and STDC++) use this.
@@ -65,14 +65,14 @@ SECTIONS
     .ARM.extab : ALIGN(4)
     {
         *(.ARM.extab* .gnu.linkonce.armextab.*)
-    } > SRAM AT> QSPI_FLASH
+    } > QSPI_FLASH
 
     .ARM.exidx : ALIGN(4)
     {
         __exidx_start = .;
         *(.ARM.exidx* .gnu.linkonce.armexidx.*)
         __exidx_end = .;
-    } > SRAM AT> QSPI_FLASH
+    } > QSPI_FLASH
  
     _etext = .;
         
@@ -104,7 +104,7 @@ SECTIONS
     } > SRAM AT> SRAM
 
     /* Main DATA section (SRAM) */
-    .data : ALIGN_WITH_INPUT
+    .data : ALIGN(4)
     {
        FILL(0xff)
        _data = . ;
