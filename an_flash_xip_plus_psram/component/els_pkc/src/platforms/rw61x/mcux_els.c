@@ -1,6 +1,5 @@
 /*
  *     Copyright 2021 - 2023 NXP
- *     All rights reserved.
  *
  *     SPDX-License-Identifier: BSD-3-Clause
  */
@@ -112,17 +111,17 @@ static status_t ELS_PRNG_KickOff(void)
             {
                 status = kStatus_SlotUnavailable;
                 break;
-            }   
+            }
             /* Found free key slot */
             if(key_properties.bits.kactv == 0u)
             {
-                break; 
+                break;
             }
         }
 
         /* Free key slot found */
-        if(status == kStatus_Success && keyIdx < MCUXCLELS_KEY_SLOTS) 
-        {        
+        if(status == kStatus_Success && keyIdx < MCUXCLELS_KEY_SLOTS)
+        {
             /* delete empty temp keyslot; */
             /* Even if KDELETE is requested to delete an inactive key, the els entropy level will be raised to low and the
              * PRNG will go ready, */
@@ -155,5 +154,5 @@ static status_t ELS_PRNG_KickOff(void)
     {
       status = kStatus_Success;
     }
-    return status; 
+    return status;
 }

@@ -1,6 +1,5 @@
 /*
  * Copyright 2024 NXP
- * All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -59,7 +58,7 @@ BOARD_InitPins:
 /* FUNCTION ************************************************************************************************************
  *
  * Function Name : BOARD_InitPins
- * Description   : 
+ * Description   :
  *
  * END ****************************************************************************************************************/
 /* Function assigned for the Cortex-M33 */
