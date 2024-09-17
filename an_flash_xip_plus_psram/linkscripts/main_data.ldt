@@ -1,0 +1,10 @@
+
+<#if memory.name=="SRAM">
+       *fsl_flexspi.o (.text*)
+       *fsl_clock.o (.text*)
+       *clock_config.o (.text*)
+       *fsl_reset.o (.text*)
+       *fsl_debug_console.o (.text*)
+       *fsl_cache.o (.text*)
+</#if>
+       *(.data*)

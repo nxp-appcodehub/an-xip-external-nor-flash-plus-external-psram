@@ -1,0 +1,16 @@
+NXP Software Content Register
+
+Package:                    an-xip-external-nor-flash-plus-external-psram
+
+Version:                    1.0
+Outgoing License:           LA_OPT_Online Code Hosting NXP_Software_License - v1.2 October 2023 
+License file:               License.txt
+Description and comments:   Application note demonstrating how to perform XIP from
+                            external NOR and use a psram on both ports of the FlexSPI
+                            using the RW612-FRDM board.
+Release Location:           https://github.com/nxp-appcodehub/an-xip-external-nor-flash-plus-external-psram
+Origin:                     NXP (BSD-3-clause)
+                            NXP (Proprietary)
+                            CMSIS v5.9.0 (Apache-2.0) - https://github.com/ARM-software/CMSIS_5/releases/tag/5.9.0
+
+
